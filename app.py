@@ -41,7 +41,7 @@ def message():
 @app.route('/call', methods=['POST'])
 def call():
     # Make an outbound call to the provided number from your Twilio number
-    call = client.calls.create(to=request.form['to'], from_=TWILIO_NUMBER, 
+    call = client.calls.create(to=request.form['to'], from_=TWILIO_NUMBER,
                                url='http://twimlets.com/message?Message%5B0%5D=http://demo.kevinwhinnery.com/audio/zelda.mp3')
 
     # Return a message indicating the call is coming
@@ -54,6 +54,38 @@ def hello():
     response.say('Hello there! You have successfully configured a web hook.')
     response.say('Good luck on your Twilio quest!', voice='woman')
     return Response(str(response), mimetype='text/xml')
+
+@app.route('/incoming/call', methods=['POST', 'GET'])
+def incoming_call():
+    return Response("""
+<Response>
+    <Gather action="/pressednumber" method="POST">
+        <Say>Pres one for record two for play. Press 0 for human error</Say>
+    </Gather>
+</Response>
+    """, mimetype='text/xml')
+
+
+play=""
+
+@app.route('/pressednumber', methods=['POST', 'GET'])
+def pressed_number():
+    response = twiml.Response()
+    if request.form['Digits'] == "1":
+        response.record(action="/record", finishOnKey="#")
+    elif request.form['Digits'] == "2":
+        Response.play(play)
+    elif request.form['Digits'] == "0":
+        Response.dial("+353831862441")
+    else:
+        response.say("You pressed {} ".format(request.form['Digits']))
+
+    return Response(str(response), mimetype='text/xml')
+
+@app.route('/record', methods=['POST', 'GET'])
+def record():
+    play = request.form['RecordingUrl']
+    return "danke"
 
 if __name__ == '__main__':
     # Note that in production, you would want to disable debugging
